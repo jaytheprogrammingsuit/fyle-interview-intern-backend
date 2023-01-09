@@ -66,7 +66,11 @@ class Assignment(db.Model):
         assertions.assert_valid(assignment.student_id == principal.student_id, 'This assignment belongs to some other student')
         assertions.assert_valid(assignment.content is not None, 'assignment with empty content cannot be submitted')
 
+        # If student want to submit the SUBMITTED assignment we will return it
         assignment.teacher_id = teacher_id
+        if (assignment.state == str(AssignmentStateEnum.SUBMITTED)) :
+            return assignment
+
         assignment.state = AssignmentStateEnum.SUBMITTED
         db.session.flush()
 
@@ -75,3 +79,25 @@ class Assignment(db.Model):
     @classmethod
     def get_assignments_by_student(cls, student_id):
         return cls.filter(cls.student_id == student_id).all()
+        # return cls.filter(cls.student_id == student_id, cls.state == "DRAFT").all()
+
+    # Create new method for fetching teacher's associate assignmnets details through teacher_id
+    @classmethod
+    def get_assignments_by_teacher(cls, teacher_id):
+        return cls.filter(cls.teacher_id == teacher_id).all()
+        # return cls.filter(cls.teacher_id == teacher_id, cls.grade == "").all()
+
+
+    # Create new method graded() for teacher to grade the assignmnets
+    @classmethod
+    def graded(cls, _id, grade, principal: Principal):
+        assignment = Assignment.get_by_id(_id)
+        assertions.assert_found(assignment, 'No assignment with this id was found')
+        assertions.assert_valid(assignment.teacher_id == principal.teacher_id, 'This assignment belongs to some other Teacher')
+        assertions.assert_valid(assignment.content is not None, 'assignment with empty content cannot be Graded')
+       
+        assignment.grade = grade
+        assignment.state = AssignmentStateEnum.GRADED
+        db.session.flush()
+
+        return assignment
